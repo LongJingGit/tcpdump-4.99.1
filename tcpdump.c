@@ -1046,8 +1046,7 @@ set_dumper_capsicum_rights(pcap_dumper_t *p)
 /*
  * Copy arg vector into a new buffer, concatenating arguments with spaces.
  */
-static char *
-copy_argv(char **argv)
+static char *copy_argv(char **argv)
 {
     char **p;
     size_t len = 0;
@@ -1088,8 +1087,7 @@ copy_argv(char **argv)
 #define O_BINARY 0
 #endif
 
-static char *
-read_infile(char *fname)
+static char *read_infile(char *fname)
 {
     int i, fd;
     ssize_t cc;
@@ -1279,8 +1277,7 @@ static char rpcap_prefix[] = "rpcap://";
 static char rpcap_ssl_prefix[] = "rpcaps://";
 #endif
 
-static pcap_t *
-open_interface(const char *device, netdissect_options *ndo, char *ebuf)
+static pcap_t *open_interface(const char *device, netdissect_options *ndo, char *ebuf)
 {
     pcap_t *pc;
 #ifdef HAVE_PCAP_CREATE
@@ -1496,7 +1493,15 @@ open_interface(const char *device, netdissect_options *ndo, char *ebuf)
      */
     if (ndo->ndo_snaplen == 0)
         ndo->ndo_snaplen = MAXIMUM_SNAPLEN;
-    pc = pcap_open_live(device, ndo->ndo_snaplen, !pflag, timeout, ebuf);       // 打开一个用于捕获数据的网络接口
+    /**
+     * @brief 打开一个用于捕获数据的网络接口
+     * @param device            网络接口的名字。用 -i 参数指定；如果没有指定，则会在 pcap_lookupdev 中查找
+     * @param ndo->ndo_snaplen  捕获数据包的长度，长度不能大于 65535 个字节
+     * @param pflag             “1” 代表混杂模式，其它非混杂模式
+     * @param timeout           指定需要等待的毫秒数，超过这个数值后，获取数据包的函数就会立即返回（这个函数不会阻塞，后面的抓包函数才会阻塞）。0 表示一直等待直到有数据包到来。
+     * @param ebuf              存储错误信息
+     */
+    pc = pcap_open_live(device, ndo->ndo_snaplen, !pflag, timeout, ebuf);
     if (pc == NULL)
     {
         /*
@@ -1574,6 +1579,7 @@ int main(int argc, char **argv)
     VFile = NULL;
     WFileName = NULL;
     dlt = -1;
+    // 在 argv[0] 中搜索最后一次出现 PATH_SEPARATOR 字符的位置。如果没找到，返回 nullptr
     if ((cp = strrchr(argv[0], PATH_SEPARATOR)) != NULL)
         ndo->program_name = program_name = cp + 1;
     else
@@ -1597,8 +1603,8 @@ int main(int argc, char **argv)
     if (abort_on_misalignment(ebuf, sizeof(ebuf)) < 0)
         error("%s", ebuf);
 
-    while (
-        (op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
+    // getopt_long BSD 的 C 库函数，没有被加入到 glibc 中
+    while ((op = getopt_long(argc, argv, SHORTOPTS, longopts, NULL)) != -1)
         switch (op)
         {
 
@@ -1649,7 +1655,7 @@ int main(int argc, char **argv)
             Cflag *= 1000000;
             break;
 
-        case 'd':
+        case 'd': // 将匹配信息包的代码以人们能够理解的汇编格式给出
             ++dflag;
             break;
 
@@ -1680,11 +1686,11 @@ int main(int argc, char **argv)
             ndo->ndo_espsecret = optarg;
             break;
 
-        case 'f':
+        case 'f': // 将外部的Internet地址以数字的形式打印出来
             ++ndo->ndo_fflag;
             break;
 
-        case 'F':
+        case 'F': // 从指定的文件中读取表达式,忽略其它的表达式
             infile = optarg;
             break;
 
@@ -1817,7 +1823,7 @@ int main(int argc, char **argv)
             break;
 #endif /* HAVE_PCAP_SETDIRECTION */
 
-        case 'r':
+        case 'r': // 从指定的文件中读取包(这些包一般通过-w选项产生)
             RFileName = optarg;
             break;
 
@@ -1899,7 +1905,7 @@ int main(int argc, char **argv)
             VFileName = optarg;
             break;
 
-        case 'w':
+        case 'w': // 直接将包写入文件中，并不分析和打印出来
             WFileName = optarg;
             break;
 
@@ -2199,7 +2205,7 @@ int main(int argc, char **argv)
              * Use whatever interface pcap_lookupdev()
              * chooses.
              */
-            device = pcap_lookupdev(ebuf);
+            device = pcap_lookupdev(ebuf); // 如果没有指定要捕获网卡的接口，则通过该接口查找对应的网卡
             if (device == NULL)
                 error("%s", ebuf);
 #endif
@@ -2301,14 +2307,23 @@ int main(int argc, char **argv)
             warning("snaplen lowered from %d to %d", ndo->ndo_snaplen, i);
             ndo->ndo_snaplen = i;
         }
+
         if (ndo->ndo_fflag != 0)
         {
-            if (pcap_lookupnet(device, &localnet, &netmask, ebuf) < 0) // 获取指定网卡的 ip 地址，子网掩码
+            /**
+             * @brief 获取指定网卡的 ip 地址，子网掩码
+             * @param device    网络接口的名字。用 -i 参数指定；如果没有指定，则会在 pcap_lookupdev 中查找
+             * @param localnet  存放 ip 地址的指针. 32 位无符号整型
+             * @param netmask   存放子网掩码的指针. 32 位无符号整型
+             * @param ebuf      存放出错信息
+             */
+            if (pcap_lookupnet(device, &localnet, &netmask, ebuf) < 0)
             {
                 warning("foreign (-f) flag used but: %s", ebuf);
             }
         }
     }
+
     if (infile)
         cmdbuf = read_infile(infile);
     else
@@ -2317,6 +2332,13 @@ int main(int argc, char **argv)
 #ifdef HAVE_PCAP_SET_OPTIMIZER_DEBUG
     pcap_set_optimizer_debug(dflag);
 #endif
+    /**
+     * @brief 编译 BPF 过滤规则
+     * @param pd: pcap_open_live() 返回的 pcap_t 类型的指针
+     * @param fcode: 存放编译后的 bpf，应用过滤规则时需要用到这个指针
+     * @param cmdbuf: 过滤条件
+     * @param Oflag: 是否需要优化过滤表达式
+     */
     if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
         error("%s", pcap_geterr(pd));
     if (dflag)
@@ -2410,6 +2432,11 @@ int main(int argc, char **argv)
     }
 #endif /* _WIN32 */
 
+    /**
+     * @brief 应用 BPF 过滤规则，让bpf规则生效
+     * @param pd: pcap_open_live() 返回的 pcap_t 类型的指针
+     * @param fcode：pcap_compile() 的第二个参数
+     */
     if (pcap_setfilter(pd, &fcode) < 0)
         error("%s", pcap_geterr(pd));
 #ifdef HAVE_CAPSICUM
@@ -2627,6 +2654,19 @@ int main(int argc, char **argv)
 
     do
     {
+        /**
+         * @brief 循环捕获网络数据包
+         * @param pd        pcap_open_live()返回的 pcap_t 类型的指针
+         * @param cnt       指定捕获数据包的个数，一旦抓到了 cnt 个数据包，pcap_loop 立即返回。如果是 -1，就会永无休止的捕获，直到出现错误
+         * @param callback          回调函数
+         * @param pcap_userdata     向回调函数中传递的参数
+         *
+         * callback 回调函数的定义:
+         *  void callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+         *      args: pcap_loop() 的最后一个参数，当收到足够数量的包后 pcap_loop 会调用callback 回调函数，同时将pcap_loop()的user参数传递给它
+         *      header: 是收到数据包的 pcap_pkthdr 类型的指针，和 pcap_next() 第二个参数是一样的
+         *      packet ：收到的数据包数据（并不是用户数据 Data，如果要获取用户数据，需要自行解包）
+         */
         status = pcap_loop(pd, cnt, callback, pcap_userdata);
         if (WFileName == NULL)
         {
@@ -3173,8 +3213,7 @@ dump_packet_and_trunc(u_char *user, const struct pcap_pkthdr *h, const u_char *s
         info(0);
 }
 
-static void
-dump_packet(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
+static void dump_packet(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 {
     struct dump_info *dump_info;
 
@@ -3198,15 +3237,17 @@ dump_packet(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
         info(0);
 }
 
-static void
-print_packet(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
+static void print_packet(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 {
     ++packets_captured;
 
     ++infodelay;
 
     if (!count_mode)
+    {
+        char hexstuff[41] = {'\0'};
         pretty_print_packet((netdissect_options *)user, h, sp, packets_captured);
+    }
 
     --infodelay;
     if (infoprint)

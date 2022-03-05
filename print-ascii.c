@@ -132,8 +132,7 @@ hex_and_ascii_print_with_offset(netdissect_options *ndo, const char *ident, cons
         cp++;
         s2 = GET_U_1(cp);
         cp++;
-        (void)snprintf(hsp, sizeof(hexstuff) - (hsp - hexstuff),
-                       " %02x%02x", s1, s2);
+        (void)snprintf(hsp, sizeof(hexstuff) - (hsp - hexstuff), " %02x%02x", s1, s2);
         hsp += HEXDUMP_HEXSTUFF_PER_SHORT;
         *(asp++) = (char)(ND_ASCII_ISGRAPH(s1) ? s1 : '.');
         *(asp++) = (char)(ND_ASCII_ISGRAPH(s2) ? s2 : '.');

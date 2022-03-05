@@ -312,8 +312,7 @@ int has_printer(int type)
     return (lookup_printer(type) != NULL);
 }
 
-if_printer
-get_if_printer(int type)
+if_printer get_if_printer(int type)
 {
     if_printer printer;
 
@@ -323,8 +322,7 @@ get_if_printer(int type)
     return printer;
 }
 
-void pretty_print_packet(netdissect_options *ndo, const struct pcap_pkthdr *h,
-                         const u_char *sp, u_int packets_captured)
+void pretty_print_packet(netdissect_options *ndo, const struct pcap_pkthdr *h, const u_char *sp, u_int packets_captured)
 {
     u_int hdrlen = 0;
     int invalid_header = 0;
@@ -425,7 +423,9 @@ void pretty_print_packet(netdissect_options *ndo, const struct pcap_pkthdr *h,
     {
     case 0:
         /* Print the packet. */
-        (ndo->ndo_if_printer)(ndo, h, sp);
+        // (ndo->ndo_if_printer)(ndo, h, sp); // 打印数据包的解析结果
+        // printf("\n");
+        hex_and_ascii_print(ndo, "\n\t", sp, h->caplen); //
         break;
     case ND_TRUNCATED:
         /* A printer quit because the packet was truncated; report it */

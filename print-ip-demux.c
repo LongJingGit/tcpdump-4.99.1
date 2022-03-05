@@ -95,7 +95,7 @@ again:
 		break;
 
 	case IPPROTO_TCP:
-		tcp_print(ndo, bp, length, iph, fragmented);
+		tcp_print(ndo, bp, length, iph, fragmented);		// 打印 tcp 层信息
 		break;
 
 	case IPPROTO_UDP:

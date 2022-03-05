@@ -205,7 +205,7 @@ recurse:
     length -= 2;
     caplen -= 2;
     p += 2;
-    hdrlen += 2;
+    hdrlen += 2; // MAC 层偏移结束
 
     /*
      * Process 802.1AE MACsec headers.
@@ -557,7 +557,7 @@ int ethertype_print(netdissect_options *ndo,
     {
 
     case ETHERTYPE_IP:
-        ip_print(ndo, p, length);
+        ip_print(ndo, p, length);       // 打印 IP 层信息
         return (1);
 
     case ETHERTYPE_IPV6:

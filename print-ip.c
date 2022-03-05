@@ -34,31 +34,30 @@
 #include "ip.h"
 #include "ipproto.h"
 
-
 static const struct tok ip_option_values[] = {
-    { IPOPT_EOL, "EOL" },
-    { IPOPT_NOP, "NOP" },
-    { IPOPT_TS, "timestamp" },
-    { IPOPT_SECURITY, "security" },
-    { IPOPT_RR, "RR" },
-    { IPOPT_SSRR, "SSRR" },
-    { IPOPT_LSRR, "LSRR" },
-    { IPOPT_RA, "RA" },
-    { IPOPT_RFC1393, "traceroute" },
-    { 0, NULL }
-};
+	{IPOPT_EOL, "EOL"},
+	{IPOPT_NOP, "NOP"},
+	{IPOPT_TS, "timestamp"},
+	{IPOPT_SECURITY, "security"},
+	{IPOPT_RR, "RR"},
+	{IPOPT_SSRR, "SSRR"},
+	{IPOPT_LSRR, "LSRR"},
+	{IPOPT_RA, "RA"},
+	{IPOPT_RFC1393, "traceroute"},
+	{0, NULL}};
 
 /*
  * print the recorded route in an IP RR, LSRR or SSRR option.
  */
 static int
 ip_printroute(netdissect_options *ndo,
-              const u_char *cp, u_int length)
+			  const u_char *cp, u_int length)
 {
 	u_int ptr;
 	u_int len;
 
-	if (length < 3) {
+	if (length < 3)
+	{
 		ND_PRINT(" [bad length %u]", length);
 		return (0);
 	}
@@ -68,8 +67,9 @@ ip_printroute(netdissect_options *ndo,
 	if (ptr < 3 || ((ptr + 1) & 3) || ptr > length + 1)
 		ND_PRINT(" [bad ptr %u]", GET_U_1(cp + 2));
 
-	for (len = 3; len < length; len += 4) {
-		ND_TCHECK_4(cp + len);	/* Needed to print the IP addresses */
+	for (len = 3; len < length; len += 4)
+	{
+		ND_TCHECK_4(cp + len); /* Needed to print the IP addresses */
 		ND_PRINT(" %s", GET_IPADDR_STRING(cp + len));
 		if (ptr > len)
 			ND_PRINT(",");
@@ -89,7 +89,7 @@ trunc:
  */
 static uint32_t
 ip_finddst(netdissect_options *ndo,
-           const struct ip *ip)
+		   const struct ip *ip)
 {
 	u_int length;
 	u_int len;
@@ -101,7 +101,8 @@ ip_finddst(netdissect_options *ndo,
 		goto trunc;
 	length -= sizeof(struct ip);
 
-	for (; length != 0; cp += len, length -= len) {
+	for (; length != 0; cp += len, length -= len)
+	{
 		int tt;
 
 		tt = GET_U_1(cp);
@@ -109,7 +110,8 @@ ip_finddst(netdissect_options *ndo,
 			break;
 		else if (tt == IPOPT_NOP)
 			len = 1;
-		else {
+		else
+		{
 			len = GET_U_1(cp + 1);
 			if (len < 2)
 				break;
@@ -117,7 +119,8 @@ ip_finddst(netdissect_options *ndo,
 		if (length < len)
 			goto trunc;
 		ND_TCHECK_LEN(cp, len);
-		switch (tt) {
+		switch (tt)
+		{
 
 		case IPOPT_SSRR:
 		case IPOPT_LSRR:
@@ -135,10 +138,11 @@ trunc:
  */
 uint16_t
 nextproto4_cksum(netdissect_options *ndo,
-                 const struct ip *ip, const uint8_t *data,
-                 u_int len, u_int covlen, uint8_t next_proto)
+				 const struct ip *ip, const uint8_t *data,
+				 u_int len, u_int covlen, uint8_t next_proto)
 {
-	struct phdr {
+	struct phdr
+	{
 		uint32_t src;
 		uint32_t dst;
 		uint8_t mbz;
@@ -166,26 +170,28 @@ nextproto4_cksum(netdissect_options *ndo,
 
 static int
 ip_printts(netdissect_options *ndo,
-           const u_char *cp, u_int length)
+		   const u_char *cp, u_int length)
 {
 	u_int ptr;
 	u_int len;
 	u_int hoplen;
 	const char *type;
 
-	if (length < 4) {
+	if (length < 4)
+	{
 		ND_PRINT("[bad length %u]", length);
 		return (0);
 	}
 	ND_PRINT(" TS{");
 	hoplen = ((GET_U_1(cp + 3) & 0xF) != IPOPT_TS_TSONLY) ? 8 : 4;
-	if ((length - 4) & (hoplen-1))
+	if ((length - 4) & (hoplen - 1))
 		ND_PRINT("[bad length %u]", length);
 	ptr = GET_U_1(cp + 2) - 1;
 	len = 0;
-	if (ptr < 4 || ((ptr - 4) & (hoplen-1)) || ptr > length + 1)
+	if (ptr < 4 || ((ptr - 4) & (hoplen - 1)) || ptr > length + 1)
 		ND_PRINT("[bad ptr %u]", GET_U_1(cp + 2));
-	switch (GET_U_1(cp + 3)&0xF) {
+	switch (GET_U_1(cp + 3) & 0xF)
+	{
 	case IPOPT_TS_TSONLY:
 		ND_PRINT("TSONLY");
 		break;
@@ -196,17 +202,18 @@ ip_printts(netdissect_options *ndo,
 		ND_PRINT("PRESPEC");
 		break;
 	default:
-		ND_PRINT("[bad ts type %u]", GET_U_1(cp + 3)&0xF);
+		ND_PRINT("[bad ts type %u]", GET_U_1(cp + 3) & 0xF);
 		goto done;
 	}
 
 	type = " ";
-	for (len = 4; len < length; len += hoplen) {
+	for (len = 4; len < length; len += hoplen)
+	{
 		if (ptr == len)
 			type = " ^ ";
 		ND_TCHECK_LEN(cp + len, hoplen);
 		ND_PRINT("%s%u@%s", type, GET_BE_U_4(cp + len + hoplen - 4),
-			  hoplen!=8 ? "" : GET_IPADDR_STRING(cp + len));
+				 hoplen != 8 ? "" : GET_IPADDR_STRING(cp + len));
 		type = " ";
 	}
 
@@ -214,7 +221,7 @@ done:
 	ND_PRINT("%s", ptr == len ? " ^ " : "");
 
 	if (GET_U_1(cp + 3) >> 4)
-		ND_PRINT(" [%u hops not recorded]} ", GET_U_1(cp + 3)>>4);
+		ND_PRINT(" [%u hops not recorded]} ", GET_U_1(cp + 3) >> 4);
 	else
 		ND_PRINT("}");
 	return (0);
@@ -229,12 +236,13 @@ trunc:
  */
 static int
 ip_optprint(netdissect_options *ndo,
-            const u_char *cp, u_int length)
+			const u_char *cp, u_int length)
 {
 	u_int option_len;
 	const char *sep = "";
 
-	for (; length > 0; cp += option_len, length -= option_len) {
+	for (; length > 0; cp += option_len, length -= option_len)
+	{
 		u_int option_code;
 
 		ND_PRINT("%s", sep);
@@ -243,28 +251,32 @@ ip_optprint(netdissect_options *ndo,
 		option_code = GET_U_1(cp);
 
 		ND_PRINT("%s",
-		          tok2str(ip_option_values,"unknown %u",option_code));
+				 tok2str(ip_option_values, "unknown %u", option_code));
 
 		if (option_code == IPOPT_NOP ||
-                    option_code == IPOPT_EOL)
+			option_code == IPOPT_EOL)
 			option_len = 1;
 
-		else {
+		else
+		{
 			option_len = GET_U_1(cp + 1);
-			if (option_len < 2) {
+			if (option_len < 2)
+			{
 				ND_PRINT(" [bad length %u]", option_len);
 				return 0;
 			}
 		}
 
-		if (option_len > length) {
+		if (option_len > length)
+		{
 			ND_PRINT(" [bad length %u]", option_len);
 			return 0;
 		}
 
 		ND_TCHECK_LEN(cp, option_len);
 
-		switch (option_code) {
+		switch (option_code)
+		{
 		case IPOPT_EOL:
 			return 0;
 
@@ -273,7 +285,7 @@ ip_optprint(netdissect_options *ndo,
 				goto trunc;
 			break;
 
-		case IPOPT_RR:       /* fall through */
+		case IPOPT_RR: /* fall through */
 		case IPOPT_SSRR:
 		case IPOPT_LSRR:
 			if (ip_printroute(ndo, cp, option_len) == -1)
@@ -281,7 +293,8 @@ ip_optprint(netdissect_options *ndo,
 			break;
 
 		case IPOPT_RA:
-			if (option_len < 4) {
+			if (option_len < 4)
+			{
 				ND_PRINT(" [bad length %u]", option_len);
 				break;
 			}
@@ -290,7 +303,7 @@ ip_optprint(netdissect_options *ndo,
 				ND_PRINT(" value %u", GET_BE_U_2(cp + 2));
 			break;
 
-		case IPOPT_NOP:       /* nothing to print - fall through */
+		case IPOPT_NOP: /* nothing to print - fall through */
 		case IPOPT_SECURITY:
 		default:
 			break;
@@ -305,20 +318,17 @@ trunc:
 #define IP_RES 0x8000
 
 static const struct tok ip_frag_values[] = {
-        { IP_MF,        "+" },
-        { IP_DF,        "DF" },
-	{ IP_RES,       "rsvd" }, /* The RFC3514 evil ;-) bit */
-        { 0,            NULL }
-};
-
+	{IP_MF, "+"},
+	{IP_DF, "DF"},
+	{IP_RES, "rsvd"}, /* The RFC3514 evil ;-) bit */
+	{0, NULL}};
 
 /*
  * print an IP datagram.
  */
-void
-ip_print(netdissect_options *ndo,
-	 const u_char *bp,
-	 u_int length)
+void ip_print(netdissect_options *ndo,
+			  const u_char *bp,
+			  u_int length)
 {
 	const struct ip *ip;
 	u_int off;
@@ -332,24 +342,27 @@ ip_print(netdissect_options *ndo,
 
 	ndo->ndo_protocol = "ip";
 	ip = (const struct ip *)bp;
-	if (IP_V(ip) != 4) { /* print version and fail if != 4 */
-	    if (IP_V(ip) == 6)
-	      ND_PRINT("IP6, wrong link-layer encapsulation");
-	    else
-	      ND_PRINT("IP%u", IP_V(ip));
-	    nd_print_invalid(ndo);
-	    return;
+	if (IP_V(ip) != 4)
+	{ /* print version and fail if != 4 */
+		if (IP_V(ip) == 6)
+			ND_PRINT("IP6, wrong link-layer encapsulation");
+		else
+			ND_PRINT("IP%u", IP_V(ip));
+		nd_print_invalid(ndo);
+		return;
 	}
 	if (!ndo->ndo_eflag)
 		ND_PRINT("IP ");
 
 	ND_TCHECK_SIZE(ip);
-	if (length < sizeof (struct ip)) {
+	if (length < sizeof(struct ip))
+	{
 		ND_PRINT("truncated-ip %u", length);
 		return;
 	}
 	hlen = IP_HL(ip) * 4;
-	if (hlen < sizeof (struct ip)) {
+	if (hlen < sizeof(struct ip))
+	{
 		ND_PRINT("bad-hlen %u", hlen);
 		return;
 	}
@@ -357,20 +370,23 @@ ip_print(netdissect_options *ndo,
 	len = GET_BE_U_2(ip->ip_len);
 	if (length < len)
 		ND_PRINT("truncated-ip - %u bytes missing! ",
-			len - length);
-	if (len < hlen) {
+				 len - length);
+	if (len < hlen)
+	{
 #ifdef GUESS_TSO
-            if (len) {
-                ND_PRINT("bad-len %u", len);
-                return;
-            }
-            else {
-                /* we guess that it is a TSO send */
-                len = length;
-            }
+		if (len)
+		{
+			ND_PRINT("bad-len %u", len);
+			return;
+		}
+		else
+		{
+			/* we guess that it is a TSO send */
+			len = length;
+		}
 #else
-            ND_PRINT("bad-len %u", len);
-            return;
+		ND_PRINT("bad-len %u", len);
+		return;
 #endif /* GUESS_TSO */
 	}
 
@@ -383,78 +399,85 @@ ip_print(netdissect_options *ndo,
 
 	off = GET_BE_U_2(ip->ip_off);
 
-        ip_proto = GET_U_1(ip->ip_p);
+	ip_proto = GET_U_1(ip->ip_p);
 
-        if (ndo->ndo_vflag) {
-            ip_tos = GET_U_1(ip->ip_tos);
-            ND_PRINT("(tos 0x%x", ip_tos);
-            /* ECN bits */
-            switch (ip_tos & 0x03) {
+	if (ndo->ndo_vflag)
+	{
+		ip_tos = GET_U_1(ip->ip_tos);
+		ND_PRINT("(tos 0x%x", ip_tos);
+		/* ECN bits */
+		switch (ip_tos & 0x03)
+		{
 
-            case 0:
-                break;
+		case 0:
+			break;
 
-            case 1:
-                ND_PRINT(",ECT(1)");
-                break;
+		case 1:
+			ND_PRINT(",ECT(1)");
+			break;
 
-            case 2:
-                ND_PRINT(",ECT(0)");
-                break;
+		case 2:
+			ND_PRINT(",ECT(0)");
+			break;
 
-            case 3:
-                ND_PRINT(",CE");
-                break;
-            }
+		case 3:
+			ND_PRINT(",CE");
+			break;
+		}
 
-            ip_ttl = GET_U_1(ip->ip_ttl);
-            if (ip_ttl >= 1)
-                ND_PRINT(", ttl %u", ip_ttl);
+		ip_ttl = GET_U_1(ip->ip_ttl);
+		if (ip_ttl >= 1)
+			ND_PRINT(", ttl %u", ip_ttl);
 
-	    /*
+		/*
 	     * for the firewall guys, print id, offset.
              * On all but the last stick a "+" in the flags portion.
 	     * For unfragmented datagrams, note the don't fragment flag.
 	     */
-	    ND_PRINT(", id %u, offset %u, flags [%s], proto %s (%u)",
-                         GET_BE_U_2(ip->ip_id),
-                         (off & IP_OFFMASK) * 8,
-                         bittok2str(ip_frag_values, "none", off & (IP_RES|IP_DF|IP_MF)),
-                         tok2str(ipproto_values, "unknown", ip_proto),
-                         ip_proto);
+		ND_PRINT(", id %u, offset %u, flags [%s], proto %s (%u)",
+				 GET_BE_U_2(ip->ip_id),
+				 (off & IP_OFFMASK) * 8,
+				 bittok2str(ip_frag_values, "none", off & (IP_RES | IP_DF | IP_MF)),
+				 tok2str(ipproto_values, "unknown", ip_proto),
+				 ip_proto);
 
-            ND_PRINT(", length %u", GET_BE_U_2(ip->ip_len));
+		ND_PRINT(", length %u", GET_BE_U_2(ip->ip_len));
 
-            if ((hlen - sizeof(struct ip)) > 0) {
-                ND_PRINT(", options (");
-                if (ip_optprint(ndo, (const u_char *)(ip + 1),
-                    hlen - sizeof(struct ip)) == -1) {
-                        ND_PRINT(" [truncated-option]");
-			truncated = 1;
-                }
-                ND_PRINT(")");
-            }
-
-	    if (!ndo->ndo_Kflag && (const u_char *)ip + hlen <= ndo->ndo_snapend) {
-	        vec[0].ptr = (const uint8_t *)(const void *)ip;
-	        vec[0].len = hlen;
-	        sum = in_cksum(vec, 1);
-		if (sum != 0) {
-		    ip_sum = GET_BE_U_2(ip->ip_sum);
-		    ND_PRINT(", bad cksum %x (->%x)!", ip_sum,
-			     in_cksum_shouldbe(ip_sum, sum));
+		if ((hlen - sizeof(struct ip)) > 0)
+		{
+			ND_PRINT(", options (");
+			if (ip_optprint(ndo, (const u_char *)(ip + 1),
+							hlen - sizeof(struct ip)) == -1)
+			{
+				ND_PRINT(" [truncated-option]");
+				truncated = 1;
+			}
+			ND_PRINT(")");
 		}
-	    }
 
-	    ND_PRINT(")\n    ");
-	    if (truncated) {
-		ND_PRINT("%s > %s: ",
-			 GET_IPADDR_STRING(ip->ip_src),
-			 GET_IPADDR_STRING(ip->ip_dst));
-		nd_print_trunc(ndo);
-		nd_pop_packet_info(ndo);
-		return;
-	    }
+		if (!ndo->ndo_Kflag && (const u_char *)ip + hlen <= ndo->ndo_snapend)
+		{
+			vec[0].ptr = (const uint8_t *)(const void *)ip;
+			vec[0].len = hlen;
+			sum = in_cksum(vec, 1);
+			if (sum != 0)
+			{
+				ip_sum = GET_BE_U_2(ip->ip_sum);
+				ND_PRINT(", bad cksum %x (->%x)!", ip_sum,
+						 in_cksum_shouldbe(ip_sum, sum));
+			}
+		}
+
+		ND_PRINT(")\n    ");
+		if (truncated)
+		{
+			ND_PRINT("%s > %s: ",
+					 GET_IPADDR_STRING(ip->ip_src),
+					 GET_IPADDR_STRING(ip->ip_dst));
+			nd_print_trunc(ndo);
+			nd_pop_packet_info(ndo);
+			return;
+		}
 	}
 
 	/*
@@ -462,33 +485,39 @@ ip_print(netdissect_options *ndo,
 	 * level protocol.  Let them know whether there are more
 	 * fragments.
 	 */
-	if ((off & IP_OFFMASK) == 0) {
+	if ((off & IP_OFFMASK) == 0)
+	{
 		uint8_t nh = GET_U_1(ip->ip_p);
 
 		if (nh != IPPROTO_TCP && nh != IPPROTO_UDP &&
-		    nh != IPPROTO_SCTP && nh != IPPROTO_DCCP) {
+			nh != IPPROTO_SCTP && nh != IPPROTO_DCCP)
+		{
 			ND_PRINT("%s > %s: ",
-				     GET_IPADDR_STRING(ip->ip_src),
-				     GET_IPADDR_STRING(ip->ip_dst));
+					 GET_IPADDR_STRING(ip->ip_src),
+					 GET_IPADDR_STRING(ip->ip_dst));
 		}
 		/*
 		 * Do a bounds check before calling ip_demux_print().
 		 * At least the header data is required.
 		 */
-		if (!ND_TTEST_LEN((const u_char *)ip, hlen)) {
+		if (!ND_TTEST_LEN((const u_char *)ip, hlen))
+		{
 			ND_PRINT(" [remaining caplen(%u) < header length(%u)]",
-				 ND_BYTES_AVAILABLE_AFTER((const u_char *)ip),
-				 hlen);
+					 ND_BYTES_AVAILABLE_AFTER((const u_char *)ip),
+					 hlen);
 			nd_trunc_longjmp(ndo);
 		}
 		ip_demux_print(ndo, (const u_char *)ip + hlen, len, 4,
-			       off & IP_MF, GET_U_1(ip->ip_ttl), nh, bp);
-	} else {
+					   off & IP_MF, GET_U_1(ip->ip_ttl), nh, bp); // 打印 IP 层信息
+	}
+	else
+	{
 		/*
 		 * Ultra quiet now means that all this stuff should be
 		 * suppressed.
 		 */
-		if (ndo->ndo_qflag > 1) {
+		if (ndo->ndo_qflag > 1)
+		{
 			nd_pop_packet_info(ndo);
 			return;
 		}
@@ -499,7 +528,7 @@ ip_print(netdissect_options *ndo,
 		 * and the protocol.
 		 */
 		ND_PRINT("%s > %s:", GET_IPADDR_STRING(ip->ip_src),
-		          GET_IPADDR_STRING(ip->ip_dst));
+				 GET_IPADDR_STRING(ip->ip_dst));
 		if (!ndo->ndo_nflag && (p_name = netdb_protoname(ip_proto)) != NULL)
 			ND_PRINT(" %s", p_name);
 		else
@@ -512,16 +541,17 @@ trunc:
 	nd_print_trunc(ndo);
 }
 
-void
-ipN_print(netdissect_options *ndo, const u_char *bp, u_int length)
+void ipN_print(netdissect_options *ndo, const u_char *bp, u_int length)
 {
 	ndo->ndo_protocol = "ipn";
-	if (length < 1) {
+	if (length < 1)
+	{
 		ND_PRINT("truncated-ip %u", length);
 		return;
 	}
 
-	switch (GET_U_1(bp) & 0xF0) {
+	switch (GET_U_1(bp) & 0xF0)
+	{
 	case 0x40:
 		ip_print(ndo, bp, length);
 		break;
